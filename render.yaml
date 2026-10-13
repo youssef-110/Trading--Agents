@@ -1,0 +1,33 @@
+# Render blueprint (free web service). Steps are in README-cloud.md.
+#
+# Free web services sleep after ~15 minutes with no incoming request, so point a free
+# pinger (UptimeRobot, 5 minute interval) at https://<app>.onrender.com/health. That URL
+# turns 503 if the trading loop has been silent for 20 minutes, so the pinger emails you too.
+# The disk is wiped on every restart; backup.py keeps the ledger in a private GitHub repo.
+services:
+  - type: web
+    name: ultron-trader
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DASHBOARD_TOKEN        # required: the dashboard refuses to go public without it
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_TO
+        sync: false
+      - key: BACKUP_REPO            # owner/name of a PRIVATE repo
+        sync: false
+      - key: BACKUP_GITHUB_TOKEN    # fine-grained token, Contents read/write on that repo only
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: XAI_DAILY_CALLS
+        value: "0"

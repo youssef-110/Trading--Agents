@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultron</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=Saira+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:#07080a; --steel-900:#0d0f12; --steel-800:#14171c; --steel-700:#1f242b; --steel-500:#4a525d;
+    --steel-300:#98a2ae; --steel-100:#dde3ea;
+    --ember:#ff4a2e; --ember-deep:#7a1410; --ember-hot:#ffd3a8; --amber:#ffb347;
+    --buy:#5fd3a2; --hold:#8a94a1; --data:#6fd0ff;
+    --eye:var(--ember); --eye-core:var(--ember-hot); --eye-glow:.9; --pulse:2.4s;
+    --display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
+    --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--void); color:var(--steel-100); font:15px/1.5 var(--body); min-height:100%; }
+  body { overflow-x:hidden; }
+  nav { position:fixed; top:0; left:0; right:0; z-index:5; display:flex; gap:6px; align-items:center;
+        padding:12px 20px; background:linear-gradient(var(--void),transparent); }
+  nav .brand { font:700 22px/1 var(--display); letter-spacing:.14em; margin-right:18px; color:var(--steel-100); }
+  nav a { color:var(--steel-300); text-decoration:none; padding:6px 12px; border-radius:6px; font-size:14px; }
+  nav a:hover, nav a:focus-visible { color:var(--steel-100); background:var(--steel-800); outline:none; }
+  nav a[aria-current] { color:var(--steel-100); background:var(--steel-800); box-shadow:inset 0 -2px 0 var(--ember); }
+  nav .live { margin-left:auto; font-size:13px; color:var(--steel-300); display:flex; align-items:center; gap:8px; }
+  nav .live i { width:8px; height:8px; border-radius:50%; background:var(--steel-500); }
+  nav .live.ok i { background:var(--buy); box-shadow:0 0 8px var(--buy); }
+  nav .live.bad i { background:var(--ember); box-shadow:0 0 8px var(--ember); }
+
+  .stage { position:relative; display:grid; grid-template-rows:auto auto; overflow-x:hidden; }
+  @media (min-width:761px) { .stage { min-height:100vh; } }
+  .stage::before { content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(60% 55% at 50% 38%, rgba(255,74,46,.16), transparent 70%),
+      radial-gradient(120% 80% at 50% 120%, rgba(111,208,255,.05), transparent 60%); }
+  svg#world { width:100%; max-width:1100px; margin:0 auto; display:block; height:auto; padding-top:44px; overflow:visible; }
+
+  /* --- head --- */
+  #head { animation:float 7s ease-in-out infinite; transform-origin:500px 300px; }
+  @keyframes float { 0%,100% { transform:translateY(0) rotate(-.4deg); } 50% { transform:translateY(-9px) rotate(.4deg); } }
+  .eye { fill:var(--eye); filter:url(#glow); opacity:var(--eye-glow); animation:eye var(--pulse) ease-in-out infinite; }
+  .eye-core { fill:var(--eye-core); opacity:.95; animation:eye var(--pulse) ease-in-out infinite; }
+  @keyframes eye { 0%,100% { opacity:calc(var(--eye-glow) * .72); } 50% { opacity:var(--eye-glow); } }
+  .eye-halo { fill:var(--eye); opacity:.18; filter:url(#bigglow); }
+  .led { fill:var(--ember); animation:blink 3.1s steps(1) infinite; }
+  .led:nth-child(2) { animation-delay:.7s; } .led:nth-child(3) { animation-delay:1.9s; }
+  @keyframes blink { 0%,60%,100% { opacity:.9; } 70%,85% { opacity:.15; } }
+  .slat { transform-box:fill-box; transform-origin:center; fill:var(--ember); opacity:.0; }
+  .speaking .slat { opacity:.85; animation:talk .5s ease-in-out infinite alternate; }
+  .speaking .slat:nth-child(2n) { animation-delay:.12s; } .speaking .slat:nth-child(3n) { animation-delay:.23s; }
+  .speaking .slat:nth-child(5n) { animation-delay:.07s; }
+  @keyframes talk { from { transform:scaleY(.15); } to { transform:scaleY(1); } }
+  .scan { animation:scan 5s linear infinite; mix-blend-mode:screen; }
+  @keyframes scan { from { transform:translateY(-120px); } to { transform:translateY(560px); } }
+  .cable { fill:none; stroke:#2a2f36; stroke-width:7; stroke-linecap:round; transform-origin:top center; animation:sway 5s ease-in-out infinite; }
+  .cable.b { animation-delay:-1.4s; } .cable.c { animation-delay:-2.8s; }
+  .cable-glow { fill:none; stroke:var(--ember); stroke-width:1.6; opacity:.7; stroke-dasharray:6 14; animation:run 1.6s linear infinite; }
+  @keyframes sway { 0%,100% { transform:rotate(-2.5deg); } 50% { transform:rotate(2.5deg); } }
+  @keyframes run { to { stroke-dashoffset:-20; } }
+  .ring { fill:none; stroke:var(--steel-500); stroke-width:1; opacity:.35; transform-origin:500px 300px; }
+  .ring.r1 { stroke-dasharray:3 14; animation:spin 90s linear infinite; }
+  .ring.r2 { stroke-dasharray:60 20 6 20; animation:spin 140s linear infinite reverse; opacity:.25; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* --- moods, set from the bot's live status --- */
+  .mood-scan  { --eye:#6fd0ff; --eye-core:#e6f8ff; --pulse:.9s; }
+  .mood-debate { --eye:#ff2a1a; --eye-core:#fff0e0; --eye-glow:1; --pulse:.7s; }
+  .mood-starved { --eye:#ffb347; --eye-core:#fff4dc; --eye-glow:.55; --pulse:4s; }
+  .mood-locked { --eye:#ff2a1a; --eye-glow:.18; --pulse:6s; }
+  .flash .eye, .flash .eye-core { animation:none; --eye:#fff; --eye-core:#fff; opacity:1; }
+
+  /* --- agent nodes --- */
+  .link { fill:none; stroke:var(--steel-500); stroke-width:1; opacity:.5; }
+  .link.hot { stroke:var(--ember); opacity:.95; stroke-dasharray:5 7; animation:run .7s linear infinite; }
+  .node polygon { fill:var(--steel-800); stroke:var(--steel-500); stroke-width:1.4; transition:fill .25s, stroke .25s; }
+  .node text { fill:var(--steel-300); font:500 12px var(--body); text-anchor:middle; }
+  .node .tag { font:600 13px var(--display); letter-spacing:.06em; }
+  .node.lead polygon { stroke:var(--steel-300); }
+  .node.hot polygon { stroke:var(--ember); fill:#2a1512; filter:url(#glowsm); }
+  .node.buy polygon { stroke:var(--buy); } .node.buy .tag { fill:var(--buy); }
+  .node.hold .tag { fill:var(--hold); }
+  .node.won polygon { stroke-width:3; }
+  .node .picked { fill:none; stroke:var(--buy); stroke-width:1; stroke-dasharray:2 4; opacity:0; }
+  .node.won .picked { opacity:1; }
+  .node.ultronnode polygon { stroke:var(--ember); }
+
+  /* --- speech + hud --- */
+  .hud { position:relative; z-index:2; display:grid; gap:18px; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);
+         max-width:1100px; width:100%; margin:0 auto; padding:0 20px 36px; }
+  @media (max-width:760px) { .hud { grid-template-columns:1fr; } nav .brand { margin-right:6px; } }
+  .speech { border-left:3px solid var(--ember); padding:2px 0 2px 16px; min-height:96px; }
+  .speech small { color:var(--steel-300); display:block; margin-bottom:6px; }
+  .speech p { overflow-wrap:anywhere; margin:0; font:500 21px/1.35 var(--display); letter-spacing:.01em; max-width:34em; }
+  .speech p::after { content:""; display:inline-block; width:9px; height:1em; margin-left:3px; vertical-align:-2px;
+                     background:var(--ember); animation:caret 1s steps(1) infinite; }
+  @keyframes caret { 50% { opacity:0; } }
+  .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:14px 18px; align-content:start; }
+  .stats div span { display:block; color:var(--steel-300); font-size:12.5px; }
+  .stats div b { font:600 26px/1.1 var(--display); letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+  .pos { color:var(--buy); } .neg { color:var(--ember); }
+  .recent { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px 10px; }
+  .chip { border:1px solid var(--steel-700); border-radius:6px; padding:4px 10px; font-size:13px; color:var(--steel-300);
+          text-decoration:none; background:var(--steel-900); }
+  .chip b { color:var(--steel-100); font-weight:500; }
+  .chip.buy { border-color:var(--buy); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+    .speaking .slat { opacity:.85; transform:scaleY(.6); }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">ULTRON</span>
+  <a href="/" id="nav-desk">Desk</a>
+  <a href="/ultron" id="nav-ultron" aria-current="page">Ultron</a>
+  <span class="live" id="live"><i></i><span id="livetext">connecting</span></span>
+</nav>
+
+<main class="stage">
+<svg id="world" viewBox="0 0 1000 860" role="img" aria-label="Ultron and the nine agents under him, animated by what the trading desk is doing right now">
+  <defs>
+    <linearGradient id="steel" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#2b3036"/><stop offset=".22" stop-color="#7d8792"/><stop offset=".42" stop-color="#d9dfe5"/>
+      <stop offset=".52" stop-color="#f1f4f7"/><stop offset=".68" stop-color="#8b95a0"/><stop offset="1" stop-color="#23272d"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3a4048"/><stop offset=".3" stop-color="#9aa4af"/><stop offset=".5" stop-color="#cfd6dd"/>
+      <stop offset=".72" stop-color="#7c8691"/><stop offset="1" stop-color="#2f343b"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/>
+    </linearGradient>
+    <linearGradient id="scanbeam" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#6fd0ff" stop-opacity="0"/><stop offset=".5" stop-color="#6fd0ff" stop-opacity=".35"/><stop offset="1" stop-color="#6fd0ff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="aura" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ff4a2e" stop-opacity=".28"/><stop offset="1" stop-color="#ff4a2e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-200%" width="200%" height="500%"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="bigglow" x="-100%" y="-300%" width="300%" height="700%"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="glowsm" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="skullclip"><path id="skullpath" d="M300,70 C405,70 462,140 458,248 C456,318 438,372 404,420 C390,440 372,470 352,502 Q338,524 300,528 Q262,524 248,502 C228,470 210,440 196,420 C162,372 144,318 142,248 C138,140 195,70 300,70 Z"/></clipPath>
+  </defs>
+
+  <circle cx="500" cy="300" r="330" fill="url(#aura)"/>
+  <circle class="ring r1" cx="500" cy="300" r="300"/>
+  <circle class="ring r2" cx="500" cy="300" r="365"/>
+
+  <!-- links from the agents to Ultron are filled in by script -->
+  <g id="links"></g>
+
+  <!-- the head. Drawn in a 600-wide box and moved to the middle of the stage. -->
+  <g id="head"><g transform="translate(200,0)" id="headshape">
+    <!-- neck cables -->
+    <g transform="translate(0,0)">
+      <path class="cable" d="M268,520 C250,580 262,620 240,690"/>
+      <path class="cable b" d="M300,526 C300,590 310,640 300,710"/>
+      <path class="cable c" d="M332,520 C350,580 338,620 360,690"/>
+      <path class="cable-glow" d="M300,526 C300,590 310,640 300,710"/>
+    </g>
+    <!-- collar -->
+    <path d="M226,520 L374,520 L412,596 L188,596 Z" fill="#171a1f" stroke="#2f353d" stroke-width="2"/>
+    <g fill="#0b0c0e"><rect x="236" y="548" width="128" height="6" rx="3"/><rect x="246" y="562" width="108" height="6" rx="3"/></g>
+    <!-- side pods -->
+    <g>
+      <rect x="120" y="238" width="30" height="104" rx="9" fill="url(#plate)" stroke="#20242a" stroke-width="2"/>
+      <rect x="450" y="238" width="30" height="104" rx="9" fill="url(#plate)" stroke="#20242a" stroke-width="2"/>
+      <g><rect class="led" x="130" y="258" width="10" height="5" rx="2"/><rect class="led" x="130" y="278" width="10" height="5" rx="2"/><rect class="led" x="130" y="298" width="10" height="5" rx="2"/></g>
+      <g><rect class="led" x="460" y="258" width="10" height="5" rx="2"/><rect class="led" x="460" y="278" width="10" height="5" rx="2"/><rect class="led" x="460" y="298" width="10" height="5" rx="2"/></g>
+    </g>
+    <!-- skull -->
+    <use href="#skullpath" fill="url(#steel)" stroke="#15181c" stroke-width="3"/>
+    <g clip-path="url(#skullclip)">
+      <use href="#skullpath" fill="url(#shade)"/>
+      <!-- forehead seams -->
+      <g fill="none" stroke="#12151a" stroke-width="2" opacity=".75">
+        <path d="M300,70 L300,210"/><path d="M176,170 C220,150 262,146 300,146 C338,146 380,150 424,170"/>
+        <path d="M150,240 C172,214 232,200 300,200 C368,200 428,214 450,240"/>
+      </g>
+      <path d="M300,98 l12,20 l-12,20 l-12,-20 Z" fill="#12151a" opacity=".55"/>
+      <!-- faceplate -->
+      <path d="M170,236 C200,214 250,206 300,206 C350,206 400,214 430,236 C436,300 420,360 392,408 C378,430 362,458 346,486 Q334,506 300,510 Q266,506 254,486 C238,458 222,430 208,408 C180,360 164,300 170,236 Z"
+            fill="url(#plate)" stroke="#12151a" stroke-width="2.5"/>
+      <path d="M170,236 C200,214 250,206 300,206 C350,206 400,214 430,236 C436,300 420,360 392,408 C378,430 362,458 346,486 Q334,506 300,510 Q266,506 254,486 C238,458 222,430 208,408 C180,360 164,300 170,236 Z" fill="url(#shade)"/>
+      <!-- cheek seams and nose ridge -->
+      <g fill="none" stroke="#12151a" stroke-width="2" opacity=".7">
+        <path d="M184,300 C192,350 218,398 252,436"/><path d="M416,300 C408,350 382,398 348,436"/>
+        <path d="M300,306 L300,380"/><path d="M286,386 L300,398 L314,386"/>
+        <path d="M262,490 Q300,502 338,490"/>
+      </g>
+      <!-- brow bars -->
+      <path d="M160,244 L292,268 L292,282 L164,262 Z" fill="#101215"/>
+      <path d="M440,244 L308,268 L308,282 L436,262 Z" fill="#101215"/>
+      <!-- eye sockets -->
+      <path d="M182,270 L292,296 L288,318 L192,296 Z" fill="#07080a"/>
+      <path d="M418,270 L308,296 L312,318 L408,296 Z" fill="#07080a"/>
+      <!-- the eyes -->
+      <ellipse class="eye-halo" cx="240" cy="296" rx="66" ry="14"/><ellipse class="eye-halo" cx="360" cy="296" rx="66" ry="14"/>
+      <path class="eye" d="M190,278 L288,300 L285,312 L196,292 Z"/>
+      <path class="eye" d="M410,278 L312,300 L315,312 L404,292 Z"/>
+      <path class="eye-core" d="M224,288 L284,302 L283,308 L228,296 Z"/>
+      <path class="eye-core" d="M376,288 L316,302 L317,308 L372,296 Z"/>
+      <!-- mouth grille -->
+      <rect x="240" y="410" width="120" height="58" rx="9" fill="#0d0f12" stroke="#22262c" stroke-width="2"/>
+      <g id="slats"></g>
+      <!-- scan beam -->
+      <rect class="scan" x="130" y="0" width="340" height="120" fill="url(#scanbeam)"/>
+    </g>
+  </g></g>
+
+  <g id="nodes"></g>
+</svg>
+
+<section class="hud" aria-live="polite">
+  <div class="speech"><small id="whosays">Ultron</small><p id="says">Waking up…</p></div>
+  <div class="stats" id="stats"></div>
+  <div class="recent" id="recent"></div>
+</section>
+</main>
+
+<script>
+const KEY = new URLSearchParams(location.search).get("key");
+const qs = KEY ? "?key=" + encodeURIComponent(KEY) : "";
+document.getElementById("nav-desk").href = "/" + qs;
+document.getElementById("nav-ultron").href = "/ultron" + qs;
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+const eur = n => n == null ? "–" : (n < 0 ? "-" : "") + "€" + Math.abs(n).toFixed(2);
+const ago = iso => { const s = (Date.now() - new Date(iso)) / 1000;
+  return s < 90 ? Math.round(s) + "s ago" : s < 5400 ? Math.round(s / 60) + "m ago" :
+         s < 172800 ? Math.round(s / 3600) + "h ago" : Math.round(s / 86400) + "d ago"; };
+
+/* mouth slats */
+for (let i = 0; i < 9; i++) el("rect", { class: "slat", x: 250 + i * 12.4, y: 418, width: 6.5, height: 42, rx: 2 }, $("slats"));
+
+/* where each agent sits on the stage (viewBox 1000 x 860) */
+const HEAD = { x: 500, y: 300 };
+const LAYOUT = {
+  "analyst":           [130, 200, 1], "analyst.trend":   [70, 360, 0],  "analyst.reversion": [200, 400, 0],
+  "bull":              [870, 200, 1], "bull.momentum":   [800, 400, 0], "bull.pullback":     [930, 360, 0],
+  "bear":              [500, 770, 1], "bear.trap":       [370, 810, 0], "bear.regime":       [630, 810, 0],
+};
+const hexPts = (r) => [0, 1, 2, 3, 4, 5].map(i => { const a = Math.PI / 3 * i - Math.PI / 6;
+  return (Math.cos(a) * r).toFixed(1) + "," + (Math.sin(a) * r).toFixed(1); }).join(" ");
+const nodes = {}, links = {};
+const parentOf = n => n.includes(".") ? n.split(".")[0] : null;
+for (const [name, [x, y, isLead]] of Object.entries(LAYOUT)) {
+  const to = parentOf(name) ? LAYOUT[parentOf(name)] : [HEAD.x, HEAD.y];
+  const mx = (x + to[0]) / 2 + (isLead ? 0 : 0), my = (y + to[1]) / 2;
+  links[name] = el("path", { class: "link", d: `M${x},${y} Q${mx},${my + (isLead ? -30 : 0)} ${to[0]},${to[1]}` }, $("links"));
+  const g = el("g", { class: "node " + (isLead ? "lead" : "sub"), transform: `translate(${x},${y})` }, $("nodes"));
+  const r = isLead ? 34 : 25;
+  el("polygon", { points: hexPts(r) }, g);
+  el("polygon", { class: "picked", points: hexPts(r + 7) }, g);
+  const tag = el("text", { class: "tag", y: 5 }, g); tag.textContent = "";
+  const label = el("text", { y: r + 17 }, g); label.textContent = name;
+  nodes[name] = { g, tag };
+}
+/* Ultron himself, as the anchor the lines run into */
+const ug = el("g", { class: "node ultronnode", transform: `translate(${HEAD.x},${HEAD.y + 262})` }, $("nodes"));
+ug.style.display = "none";
+
+/* debate stages, in the order the desk really runs them */
+const STAGES = [["analyst.trend", "analyst.reversion", "bull.momentum", "bull.pullback"], ["analyst", "bull"],
+                ["bear.trap", "bear.regime"], ["bear"], ["ULTRON"]];
+let stageTimer = null, stageIdx = 0;
+function setHot(names) {
+  for (const n in nodes) nodes[n].g.classList.toggle("hot", names.includes(n));
+  for (const n in links) links[n].classList.toggle("hot", names.includes(n));
+}
+function startStages() {
+  if (stageTimer) return; stageIdx = 0;
+  const step = () => { setHot(STAGES[stageIdx % STAGES.length]); stageIdx++; };
+  step(); stageTimer = setInterval(step, 1500);
+}
+function stopStages() { if (stageTimer) { clearInterval(stageTimer); stageTimer = null; } setHot([]); }
+
+/* paint the latest debate's real votes onto the nodes */
+function paintVotes(d) {
+  for (const n in nodes) { nodes[n].g.classList.remove("buy", "hold", "won"); nodes[n].tag.textContent = ""; }
+  if (!d) return;
+  const lead = {};
+  for (const v of d.votes) { const nd = nodes[v.agent]; if (!nd) continue;
+    nd.g.classList.add(v.action === "BUY" ? "buy" : "hold");
+    nd.tag.textContent = (v.action === "BUY" ? "B " : "H ") + Math.round(v.confidence * 100);
+    if (!v.agent.includes(".")) lead[v.agent] = v; }
+  for (const l of Object.values(lead)) if (l.winner && nodes[l.winner]) nodes[l.winner].g.classList.add("won");
+}
+
+/* typing */
+let typed = "", typeTimer = null;
+function say(who, text) {
+  const key = who + text; if (key === typed) return; typed = key;
+  $("whosays").textContent = who; const p = $("says"); p.textContent = "";
+  clearInterval(typeTimer); let i = 0;
+  typeTimer = setInterval(() => { p.textContent = text.slice(0, ++i); if (i >= text.length) { clearInterval(typeTimer); } }, 18);
+}
+
+function mood(s) {
+  const st = s.status || "";
+  const halted = s.halted_until && new Date(s.halted_until) > new Date();
+  return halted ? "locked" : st.startsWith("desk debating") ? "debate" : st.startsWith("fetching") ? "scan" :
+         st.startsWith("out of free") ? "starved" : "idle";
+}
+
+let lastDebateId = null, lastPositions = null, lastCycleTs = null;
+function render(s) {
+  const m = mood(s), world = $("world");
+  world.setAttribute("class", "mood-" + m + (m === "debate" ? " speaking" : ""));
+  if (m === "debate") startStages(); else stopStages();
+
+  const last = s.cycles[0], fresh = last && (Date.now() - new Date(last.ts)) < 12 * 60 * 1000;
+  $("live").className = "live " + (fresh ? "ok" : "bad");
+  $("livetext").textContent = last ? (fresh ? "online, cycle " + ago(last.ts) : "silent for " + ago(last.ts)) : "waiting for first cycle";
+
+  const d = s.debates[0];
+  paintVotes(d);
+  const nPos = s.positions.length;
+  if (lastPositions !== null && nPos > lastPositions) { world.classList.add("flash"); setTimeout(() => world.classList.remove("flash"), 2500); }
+  lastPositions = nPos;
+
+  /* what Ultron says: his own words when there is a verdict, otherwise the real numbers */
+  const ul = d && d.votes.find(v => v.agent === "ultron");
+  if (m === "debate") say("Ultron", s.status.replace("desk debating", "Debating") + ". The specialists are arguing.");
+  else if (m === "locked") say("Ultron", "Circuit breaker is on. I'm not entering anything until " + new Date(s.halted_until).toLocaleString() + ".");
+  else if (m === "starved") say("Ultron", "I've used today's free calls. Setups get skipped until the quota resets.");
+  else if (ul) say("Ultron on " + d.symbol, ul.thesis || d.reason);
+  else if (d) say("Council on " + d.symbol, d.reason + ". I wasn't asked.");
+  else if (last) say("Ultron", `Watching ${last.loaded ? last.loaded.split(",").length : 0} markets. The Scout checked ${s.scout.candles_checked_24h} new candles in the last 24 hours and flagged ${s.scout.setups_flagged_24h}. I only wake the specialists when it flags one.`);
+  else say("Ultron", "Waiting for the first cycle.");
+
+  const a = s.account, pnl = (a.equity ?? 0) - (a.starting ?? 0);
+  const used = Object.values(s.llm).reduce((t, u) => t + u.used, 0), cap = Object.values(s.llm).reduce((t, u) => t + (u.limit || 0), 0);
+  $("stats").innerHTML = [
+    ["Account", eur(a.equity), ""], ["Profit / loss", eur(pnl), pnl > 0 ? "pos" : pnl < 0 ? "neg" : ""],
+    ["Open positions", nPos + " of 3", ""], ["Free calls today", used + (cap ? " of " + cap : ""), ""],
+  ].map(k => `<div><span>${k[0]}</span><b class="${k[2]}">${k[1]}</b></div>`).join("");
+
+  $("recent").innerHTML = s.debates.slice(0, 6).map(x => {
+    const buy = x.executed || x.final_action === "BUY";
+    return `<a class="chip ${buy ? "buy" : ""}" href="/${qs}"><b>${x.symbol}</b> ${buy ? "bought" : "passed"} · ${ago(x.ts)}</a>`;
+  }).join("") || `<span class="chip">No debates yet</span>`;
+}
+
+async function tick() {
+  try {
+    const r = await fetch("/api/state" + qs); if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+  } catch (e) { $("live").className = "live bad"; $("livetext").textContent = "can't reach the bot"; }
+}
+tick(); setInterval(tick, 3000);
+</script>
+</body>
+</html>

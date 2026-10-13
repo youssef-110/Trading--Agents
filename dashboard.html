@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultron desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b131a; --bg-2:#0f1b24; --panel:#132029; --panel-hi:#182833; --raise:#1e303c;
+    --rule:#233644; --rule-soft:#1a2b36;
+    --text:#e9f0f3; --dim:#91a5b0; --faint:#5a707d;
+    --gain:#6fdc9c; --loss:#ff7f70; --scout:#f5bd55; --desk:#6cb8f6; --ultron:#ff7350;
+    --flash-up:rgba(111,220,156,.30); --flash-down:rgba(255,127,112,.30);
+    --shadow:0 1px 0 rgba(255,255,255,.035) inset, 0 18px 40px -24px rgba(0,0,0,.65);
+    --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
+    --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#e9eef1; --bg-2:#f2f5f7; --panel:#ffffff; --panel-hi:#fbfcfd; --raise:#eef2f5; --rule:#d5dfe5; --rule-soft:#e4eaee;
+            --text:#13222b; --dim:#526874; --faint:#8ba0ab; --gain:#13844f; --loss:#c73a2a; --scout:#a86b00; --desk:#1d6fb4; --ultron:#c63f22;
+            --flash-up:rgba(19,132,79,.20); --flash-down:rgba(199,58,42,.20);
+            --shadow:0 1px 2px rgba(19,34,43,.06), 0 14px 30px -22px rgba(19,34,43,.35); }
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; color:var(--text); font:15px/1.5 var(--body); -webkit-font-smoothing:antialiased;
+         background:radial-gradient(1200px 520px at 18% -8%, var(--bg-2), transparent 70%), var(--bg); background-color:var(--bg); min-height:100vh; }
+  a { color:inherit; }
+  :focus-visible { outline:2px solid var(--desk); outline-offset:2px; border-radius:6px; }
+  .num { font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+  .gain { color:var(--gain); } .loss { color:var(--loss); } .dim { color:var(--dim); } .scout { color:var(--scout); }
+
+  /* top bar */
+  .bar { display:flex; align-items:center; gap:12px 22px; flex-wrap:wrap; padding:12px clamp(16px,3vw,36px);
+         position:sticky; top:0; z-index:5; border-bottom:1px solid var(--rule-soft);
+         background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(12px) saturate(1.2); }
+  .mark { display:flex; align-items:center; gap:10px; margin:0; font:800 20px/1 var(--display); font-variation-settings:"wdth" 78; letter-spacing:.14em; }
+  .mark svg { width:22px; height:22px; }
+  .tabs { display:flex; gap:2px; padding:3px; border-radius:10px; background:var(--panel); border:1px solid var(--rule-soft); }
+  .tabs a { text-decoration:none; color:var(--dim); padding:5px 12px; border-radius:7px; font-size:14px; }
+  .tabs a:hover { color:var(--text); }
+  .tabs a[aria-current] { color:var(--text); background:var(--raise); }
+  .status { display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 260px; color:var(--dim); }
+  .status b { color:var(--text); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pulse { width:9px; height:9px; border-radius:50%; background:var(--faint); flex:none; position:relative; }
+  .pulse.on { background:var(--gain); } .pulse.busy { background:var(--ultron); } .pulse.off { background:var(--loss); }
+  .pulse.on::after, .pulse.busy::after { content:""; position:absolute; inset:-5px; border-radius:50%; border:2px solid currentColor; animation:ping 2.2s ease-out infinite; }
+  .pulse.on { color:var(--gain); } .pulse.busy { color:var(--ultron); } .pulse.busy::after { animation-duration:1s; }
+  @keyframes ping { from { transform:scale(.4); opacity:.9; } to { transform:scale(1.6); opacity:0; } }
+  .clock { display:flex; align-items:center; gap:9px; color:var(--dim); font-size:13px; }
+  .ring { width:24px; height:24px; transform:rotate(-90deg); }
+  .ring circle { fill:none; stroke-width:3; } .ring .bg { stroke:var(--rule); }
+  .ring .fg { stroke:var(--desk); stroke-linecap:round; transition:stroke-dashoffset 1s linear; }
+  .chip { font-size:12px; padding:3px 10px; border-radius:99px; background:var(--panel); border:1px solid var(--rule-soft); color:var(--dim); }
+  .chip.bad { color:var(--loss); border-color:var(--loss); }
+
+  main { max-width:1380px; margin:0 auto; padding:clamp(16px,3vw,36px); display:grid; grid-template-columns:minmax(0,1fr); gap:clamp(16px,2vw,24px); }
+  .grid2 > *, .grid-hero > * { min-width:0; }
+  .panel { background:linear-gradient(180deg, var(--panel-hi), var(--panel)); border:1px solid var(--rule-soft); border-radius:16px;
+           padding:clamp(16px,2.2vw,26px); box-shadow:var(--shadow); min-width:0; }
+  h2 { margin:0; font:650 19px/1.2 var(--display); font-variation-settings:"wdth" 88; }
+  .sub { margin:4px 0 16px; color:var(--dim); font-size:13.5px; max-width:66ch; }
+  .head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:4px 16px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr)); gap:clamp(16px,2vw,24px); }
+  .grid-hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:clamp(16px,2vw,24px); }
+  @media (max-width:1040px) { .grid-hero { grid-template-columns:1fr; } }
+
+  /* account */
+  .acct { display:grid; gap:6px; }
+  .worth { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin:2px 0 0; }
+  .worth .big { font:720 clamp(52px,7.5vw,88px)/.95 var(--display); font-variation-settings:"wdth" 80; letter-spacing:-.025em; }
+  .worth .big small { font-size:.4em; font-weight:500; color:var(--dim); margin-right:3px; letter-spacing:0; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:99px; font-weight:600; font-size:14px;
+          background:var(--raise); color:var(--dim); }
+  .pill.gain { background:color-mix(in srgb, var(--gain) 16%, transparent); color:var(--gain); }
+  .pill.loss { background:color-mix(in srgb, var(--loss) 16%, transparent); color:var(--loss); }
+  .curve { position:relative; margin:14px -6px 0; }
+  .curve svg { width:100%; height:auto; display:block; overflow:visible; }
+  .tip { position:absolute; top:0; pointer-events:none; background:var(--raise); border:1px solid var(--rule); border-radius:8px;
+         padding:3px 9px; font-size:12.5px; transform:translate(-50%,-115%); white-space:nowrap; opacity:0; transition:opacity .12s; }
+  .halo { animation:halo 2.2s ease-out infinite; transform-origin:center; transform-box:fill-box; }
+  @keyframes halo { from { transform:scale(1); opacity:.55; } to { transform:scale(3.2); opacity:0; } }
+  .kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:16px; }
+  @media (max-width:560px) { .kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  .kpi { background:var(--raise); border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px; min-width:0; }
+  .kpi svg { width:34px; height:34px; flex:none; transform:rotate(-90deg); }
+  .kpi svg circle { fill:none; stroke-width:4; } .kpi svg .bg { stroke:var(--rule); }
+  .kpi svg .fg { stroke-linecap:round; transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1); }
+  .kpi b { display:block; font:650 20px/1.1 var(--display); } .kpi span { color:var(--dim); font-size:12px; }
+
+  /* the desk constellation */
+  .desk svg { width:100%; height:auto; display:block; }
+  .edge { stroke:var(--rule); stroke-width:1.5; fill:none; }
+  .edge.live { stroke:var(--ultron); stroke-dasharray:4 7; animation:flow 1s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset:-11; } }
+  .nd .disc { fill:var(--raise); stroke:var(--rule); stroke-width:1.5; }
+  .nd .arc { fill:none; stroke-width:3.5; stroke-linecap:round; transform-box:fill-box; transform-origin:center; transform:rotate(-90deg); transition:stroke-dashoffset 1s; }
+  .nd text { fill:var(--text); font:600 12px var(--body); text-anchor:middle; }
+  .nd text.sm { fill:var(--dim); font:500 10.5px var(--body); }
+  .nd.buy .disc { stroke:var(--gain); fill:color-mix(in srgb, var(--gain) 14%, var(--raise)); }
+  .nd.hold .disc { stroke:var(--faint); }
+  .nd.mgr .disc { stroke:var(--ultron); }
+  .lastline { margin-top:8px; color:var(--dim); font-size:13.5px; }
+  .lastline b { color:var(--text); font-weight:600; }
+  .key { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--dim); font-size:12.5px; margin-top:10px; }
+  .key i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; border:2px solid var(--faint); }
+  .key i.b { border-color:var(--gain); } .key i.r { border:0; background:conic-gradient(var(--desk) 0 70%, var(--rule) 0); }
+
+  /* dip board */
+  .board { display:grid; }
+  .brow { display:grid; grid-template-columns:92px 104px 92px minmax(150px,1fr) minmax(108px,150px); gap:0 18px; align-items:center;
+          padding:8px 6px; border-radius:10px; }
+  .brow:nth-child(odd) { background:color-mix(in srgb, var(--raise) 45%, transparent); }
+  .brow.hot { background:color-mix(in srgb, var(--scout) 10%, transparent); }
+  @media (max-width:760px) { .brow { grid-template-columns:76px 1fr auto; gap:2px 10px; }
+                             .brow .sp { display:none; } .brow .track { grid-column:1 / -1; } .brow .note { text-align:right; } }
+  .sym b { font:650 16px/1 var(--display); } .sym small { color:var(--faint); margin-left:1px; }
+  .px { font-weight:500; padding:2px 8px; margin:-2px -8px; border-radius:5px; width:max-content; }
+  .sp { display:flex; align-items:center; gap:6px; font-size:12px; }
+  .spark { width:56px; height:22px; overflow:visible; flex:none; }
+  .spark path { fill:none; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
+  .track { position:relative; height:34px; }
+  .track::before { content:""; position:absolute; left:0; right:0; top:19px; height:4px; border-radius:2px;
+                   background:linear-gradient(90deg, var(--rule), color-mix(in srgb, var(--rule) 40%, transparent)); }
+  .track .zone { position:absolute; left:0; top:15px; height:12px; border-radius:6px;
+                 background:linear-gradient(90deg, color-mix(in srgb, var(--scout) 10%, transparent), color-mix(in srgb, var(--scout) 32%, transparent));
+                 border-right:2px solid var(--scout); }
+  .track .mid { position:absolute; left:50%; top:16px; height:10px; width:1px; background:var(--faint); }
+  .track .dot { position:absolute; top:14px; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:var(--text);
+                transition:left 1.2s cubic-bezier(.2,.8,.2,1), background .4s; box-shadow:0 0 0 3px var(--panel); }
+  .track .dot.hot { background:var(--scout); color:var(--scout); } .track .dot.held { background:var(--gain); color:var(--gain); }
+  .track .dot.hot::after, .track .dot.held::after { content:""; position:absolute; inset:-4px; border-radius:50%; border:2px solid currentColor; animation:ping 1.8s ease-out infinite; }
+  .track .val { position:absolute; top:-1px; font-size:11.5px; color:var(--dim); transform:translateX(-50%); transition:left 1.2s cubic-bezier(.2,.8,.2,1); }
+  .note { font-size:12.5px; color:var(--dim); text-align:right; }
+  .note.hot { color:var(--scout); font-weight:600; } .note.held { color:var(--gain); font-weight:600; }
+
+  /* open trades */
+  .pos { padding:14px 16px; border-radius:12px; background:var(--raise); margin-bottom:10px; }
+  .pos .top { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; }
+  .pos .top b { font:700 20px/1 var(--display); }
+  .tag { font-size:11.5px; padding:3px 10px; border-radius:99px; border:1px solid var(--rule); color:var(--dim); white-space:nowrap; }
+  .tag.prac { color:var(--scout); border-color:color-mix(in srgb, var(--scout) 60%, transparent); }
+  .tag.buy { color:var(--gain); border-color:color-mix(in srgb, var(--gain) 60%, transparent); }
+  .tag.real { color:var(--desk); border-color:color-mix(in srgb, var(--desk) 60%, transparent); }
+  .range { position:relative; height:8px; margin:18px 0 7px; border-radius:4px;
+           background:linear-gradient(90deg, color-mix(in srgb, var(--loss) 55%, transparent) 0, color-mix(in srgb, var(--loss) 15%, transparent) 33.33%,
+                                             color-mix(in srgb, var(--gain) 15%, transparent) 33.33%, color-mix(in srgb, var(--gain) 55%, transparent) 100%); }
+  .range i { position:absolute; top:-5px; width:18px; height:18px; margin-left:-9px; border-radius:50%; background:var(--text);
+             box-shadow:0 0 0 3px var(--raise); transition:left 1s cubic-bezier(.2,.8,.2,1); }
+  .range .entry { position:absolute; left:33.33%; top:-4px; bottom:-4px; width:2px; background:var(--dim); }
+  .scale { display:flex; justify-content:space-between; color:var(--faint); font-size:12px; gap:8px; }
+  .pl { margin-left:auto; font:650 19px/1 var(--display); }
+  .thesis { color:var(--dim); margin-top:8px; font-size:13px; }
+
+  /* feed */
+  .feed { list-style:none; margin:0; padding:0; max-height:440px; overflow:auto; }
+  .feed li { display:grid; grid-template-columns:28px 1fr auto; gap:12px; padding:9px 2px; align-items:start; }
+  .feed li + li { border-top:1px solid var(--rule-soft); }
+  .ico { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:var(--raise); color:var(--faint); }
+  .ico svg { width:15px; height:15px; }
+  .feed .open .ico, .feed .win .ico { color:var(--gain); background:color-mix(in srgb, var(--gain) 14%, transparent); }
+  .feed .loss .ico { color:var(--loss); background:color-mix(in srgb, var(--loss) 14%, transparent); }
+  .feed .debate .ico { color:var(--desk); background:color-mix(in srgb, var(--desk) 14%, transparent); }
+  .feed .lesson .ico { color:var(--scout); background:color-mix(in srgb, var(--scout) 14%, transparent); }
+  .feed .scan { color:var(--dim); }
+  .feed li > span:nth-child(2) { padding-top:3px; }
+  .feed li.fresh { animation:enter .6s cubic-bezier(.2,.8,.2,1); }
+  @keyframes enter { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+  .feed time { color:var(--faint); font-size:12.5px; white-space:nowrap; padding-top:4px; }
+
+  /* funnel + setups */
+  .funnel { display:grid; gap:12px; }
+  .fstep { display:grid; grid-template-columns:150px 1fr 48px; gap:12px; align-items:center; }
+  .fbar { height:12px; border-radius:6px; background:var(--raise); overflow:hidden; }
+  .fbar i { display:block; height:100%; border-radius:6px; width:0; min-width:3px; transition:width .9s cubic-bezier(.2,.8,.2,1); }
+  .fstep span:last-child { text-align:right; font:650 17px/1 var(--display); }
+  .setup { display:grid; grid-template-columns:minmax(0,1fr) minmax(100px,1.3fr) 76px; gap:6px 14px; align-items:center; padding:9px 0; }
+  .setup + .setup { border-top:1px solid var(--rule-soft); }
+  .meter { position:relative; height:10px; border-radius:5px; background:var(--raise); }
+  .meter i { position:absolute; left:0; top:0; bottom:0; border-radius:5px; transition:width .9s; }
+  .meter u { position:absolute; top:-5px; bottom:-5px; width:2px; border-radius:1px; background:var(--scout); left:38%; }
+
+  /* debates */
+  details.deb { border-radius:12px; background:var(--raise); margin-bottom:8px; }
+  details.deb > summary { cursor:pointer; list-style:none; padding:12px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 14px; align-items:center; }
+  details.deb > summary::-webkit-details-marker { display:none; }
+  @media (max-width:640px) { details.deb > summary { grid-template-columns:minmax(0,1fr); } .fstep { grid-template-columns:110px 1fr 40px; } }
+  .dtitle { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; }
+  .dtitle b { font:650 16px/1 var(--display); }
+  .votes { display:flex; gap:4px; flex-wrap:wrap; }
+  .vchip { width:24px; height:24px; border-radius:6px; display:grid; place-items:center; font:600 10px var(--body); background:var(--panel); color:var(--faint); border:1px solid var(--rule); }
+  .vchip.buy { background:color-mix(in srgb, var(--gain) 22%, var(--panel)); color:var(--gain); border-color:color-mix(in srgb, var(--gain) 50%, transparent); }
+  .vchip.ld { border-radius:50%; } .vchip.mgr { border-radius:50%; border-color:var(--ultron); }
+  .dbody { padding:0 14px 14px; display:grid; gap:10px; }
+  .vote { border-left:3px solid var(--rule); padding:2px 0 2px 12px; }
+  .vote.lead { border-left-color:var(--desk); } .vote.mgr { border-left-color:var(--ultron); }
+  .vote.sub { margin-left:18px; } .vote.won { border-left-color:var(--gain); }
+  .vote small { color:var(--dim); }
+
+  /* agents */
+  .leads { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:14px; }
+  .lead { background:var(--raise); border-radius:12px; padding:12px 14px; }
+  .lead.mgr { box-shadow:inset 0 2px 0 var(--ultron); } .lead:not(.mgr) { box-shadow:inset 0 2px 0 var(--desk); }
+  .node { padding:6px 0; } .node .name { font-weight:600; } .node .lens { color:var(--dim); font-size:12.5px; margin-top:2px; }
+  .node .meta { display:flex; justify-content:space-between; gap:8px; color:var(--dim); font-size:12.5px; margin-top:4px; }
+  .rel { height:5px; background:var(--panel); border-radius:3px; margin-top:5px; overflow:hidden; }
+  .rel i { display:block; height:100%; background:var(--desk); transition:width .9s; }
+  .subs { margin-top:6px; padding-top:6px; border-top:1px solid var(--rule); }
+
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px 10px 8px 0; border-bottom:1px solid var(--rule-soft); vertical-align:top; }
+  th { color:var(--dim); font-weight:500; font-size:12.5px; }
+  .scroll { overflow-x:auto; }
+  .empty { color:var(--dim); padding:14px 16px; max-width:64ch; border-radius:12px; background:var(--raise); }
+  button { font:500 14px var(--body); color:var(--text); background:var(--raise); border:1px solid var(--rule);
+           border-radius:9px; padding:8px 14px; cursor:pointer; transition:border-color .15s, background .15s; }
+  button:hover { border-color:var(--desk); } button:active { transform:translateY(1px); } button:disabled { opacity:.5; cursor:wait; }
+  .row { display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; }
+  details.more > summary { cursor:pointer; list-style:none; } details.more > summary::-webkit-details-marker { display:none; }
+  details.more > summary h2::after { content:" +"; color:var(--faint); } details.more[open] > summary h2::after { content:" –"; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1 class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="3" fill="var(--ultron)"/><circle cx="4.5" cy="18" r="2.6" fill="var(--desk)"/><circle cx="12" cy="18" r="2.6" fill="var(--desk)"/><circle cx="19.5" cy="18" r="2.6" fill="var(--desk)"/><path d="M12 8v7.4M10.2 7.4 5.6 15.6M13.8 7.4l4.6 8.2" stroke="var(--dim)" stroke-width="1.4"/></svg>ULTRON</h1>
+  <nav class="tabs" aria-label="Pages"><a href="/" id="tab-desk" aria-current="page">Desk</a><a href="/ultron" id="tab-ultron">Ultron</a></nav>
+  <div class="status" aria-live="polite"><span class="pulse" id="pulse"></span><b id="status">connecting…</b></div>
+  <div class="clock" title="The desk scans the market every cycle">
+    <svg class="ring" viewBox="0 0 26 26" aria-hidden="true"><circle class="bg" cx="13" cy="13" r="10"/><circle class="fg" id="ring" cx="13" cy="13" r="10" stroke-dasharray="62.83" stroke-dashoffset="62.83"/></svg>
+    <span id="clock" class="num">next scan –</span>
+  </div>
+  <span class="chip" id="halt" hidden></span>
+  <span class="chip">paper money only</span>
+</div>
+
+<main>
+  <div class="grid-hero">
+    <section class="panel acct">
+      <div class="head"><h2>Paper account</h2><span class="dim">started with <span id="start" class="num">€500</span></span></div>
+      <div class="worth"><span class="big num"><small>€</small><span id="equity">500.00</span></span><span class="pill num" id="pnl">€0.00</span></div>
+      <div class="curve" id="curvebox"></div>
+      <div class="kpis">
+        <div class="kpi"><svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="16"/><circle class="fg" id="k-win-ring" cx="20" cy="20" r="16" stroke="var(--gain)" stroke-dasharray="100.5" stroke-dashoffset="100.5"/></svg><div><b id="k-win" class="num">–</b><span>trades won</span></div></div>
+        <div class="kpi"><svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="16"/><circle class="fg" id="k-open-ring" cx="20" cy="20" r="16" stroke="var(--desk)" stroke-dasharray="100.5" stroke-dashoffset="100.5"/></svg><div><b id="k-open" class="num">0</b><span>open now</span></div></div>
+        <div class="kpi"><svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="16"/><circle class="fg" id="k-cash-ring" cx="20" cy="20" r="16" stroke="var(--scout)" stroke-dasharray="100.5" stroke-dashoffset="100.5"/></svg><div><b id="k-in" class="num">€0</b><span>in trades</span></div></div>
+        <div class="kpi"><svg viewBox="0 0 40 40"><circle class="bg" cx="20" cy="20" r="16"/><circle class="fg" id="k-ai-ring" cx="20" cy="20" r="16" stroke="var(--ultron)" stroke-dasharray="100.5" stroke-dashoffset="100.5"/></svg><div><b id="k-ai" class="num">0</b><span>AI calls today</span></div></div>
+      </div>
+    </section>
+    <section class="panel desk">
+      <div class="head"><h2>The desk</h2><span class="dim" id="desk-when"></span></div>
+      <p class="sub">Six specialists argue, three leads pick a side, Ultron decides. Colours show the latest debate; the ring around each agent is how often it has been right.</p>
+      <div id="constellation"></div>
+      <div class="lastline" id="lastline"></div>
+      <div class="key"><span><i class="b"></i>said BUY</span><span><i></i>said HOLD</span><span><i class="r"></i>track record</span></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="head"><h2>Market board</h2><span class="dim" id="board-when"></span></div>
+    <p class="sub">The Scout wants a coin oversold (RSI under <span id="rsi-lim">35</span>) while it's still above its long-term trend. In quiet hours the desk also debates the best-looking coin every couple of hours. Closest to a setup comes first.</p>
+    <div class="board" id="board"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Open trades</h2><p class="sub">Each exits by itself at <span id="stop-pct">-2</span>% or <span id="tp-pct">+4</span>%. The dot is where price sits between the two.</p>
+      <div id="positions"></div>
+    </section>
+    <section class="panel">
+      <h2>Live feed</h2><p class="sub">What the desk just did.</p>
+      <ul class="feed" id="feed"></ul>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Debates</h2><p class="sub">Each square is one agent's vote, circles are the leads and Ultron. Open one to read the arguments.</p>
+    <div id="debates"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Last 24 hours</h2><p class="sub" id="funnel-sub"></p>
+      <div class="funnel" id="funnel"></div>
+    </section>
+    <section class="panel">
+      <h2>Which setups actually work</h2><p class="sub">Every debated setup is followed for 48 hours to see if +4% or -2% comes first. The orange line is break-even, about 38%.</p>
+      <div id="setups"></div>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel"><h2>Closed trades</h2><p class="sub">Newest first.</p><div class="scroll" id="trades"></div></section>
+    <section class="panel"><h2>Lessons the desk wrote</h2><p class="sub">Written after every closed trade and fed back into the next debates.</p><div id="lessons"></div></section>
+  </div>
+
+  <section class="panel">
+    <h2>Track records</h2><p class="sub">Weight is how often an agent's vote matched what really happened. Better records count for more in the council.</p>
+    <div class="leads" id="tree"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel"><h2>Does the AI beat taking every setup?</h2><p class="sub">Practice trades don't count as "Ultron said BUY".</p><div id="shadow"></div></section>
+    <section class="panel">
+      <h2>Free AI calls today</h2><p class="sub">Daily caps keep this at €0.</p><div id="llm"></div>
+      <h2 style="margin-top:22px">Email alerts</h2>
+      <div class="row" style="margin:10px 0"><button id="testmail" type="button">Send a test email</button><span id="mailstate" class="dim"></span></div>
+      <div class="scroll" id="emails"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <details class="more"><summary><h2>Every scan</h2></summary><div class="scroll" id="cycles" style="margin-top:12px"></div></details>
+  </section>
+</main>
+
+<script>
+const KEY = new URLSearchParams(location.search).get("key");
+const $ = id => document.getElementById(id);
+if (KEY) { $("tab-desk").href = "/?key=" + encodeURIComponent(KEY); $("tab-ultron").href = "/ultron?key=" + encodeURIComponent(KEY); }
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur = (n, d = 2) => n == null ? "–" : (n < 0 ? "-" : "") + "€" + Math.abs(n).toLocaleString("en", {minimumFractionDigits: d, maximumFractionDigits: d});
+const signed = (n, d = 2) => n == null ? "–" : (n > 0 ? "+" : n < 0 ? "-" : "") + "€" + Math.abs(n).toFixed(d);
+const pct = n => n == null ? "–" : (n * 100).toFixed(0) + "%";
+const sc = n => n > 0 ? "gain" : n < 0 ? "loss" : "";
+const pretty = s => String(s || "").replace(/_/g, " ");
+const empty = t => `<div class="empty">${t}</div>`;
+const when = iso => new Date(iso).getTime();
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CIRC = 100.5;
+function ago(iso) { const s = (Date.now() - when(iso)) / 1000;
+  return s < 5 ? "just now" : s < 90 ? Math.round(s) + "s ago" : s < 5400 ? Math.round(s / 60) + "m ago" :
+         s < 172800 ? Math.round(s / 3600) + "h ago" : Math.round(s / 86400) + "d ago"; }
+function price(p) { if (p == null) return "–"; const a = Math.abs(p);
+  return "€" + (a >= 1000 ? p.toLocaleString("en", {maximumFractionDigits: 0}) : a >= 10 ? p.toFixed(2) : a >= 1 ? p.toFixed(3) : p.toFixed(5)); }
+const ICON = {
+  scan: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>',
+  debate: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 3.5h7v5h-4l-3 2.5z"/><path d="M9.5 6.5h4v5l-2-1.5h-4"/></svg>',
+  open: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l4-4 2.5 2.5L13 6"/><path d="M10 6h3v3"/></svg>',
+  win: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3.5 8.5 3 3 6-7"/></svg>',
+  loss: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5l4 4 2.5-2.5L13 10"/><path d="M10 10h3V7"/></svg>',
+  lesson: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3.5h4.5a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 0-1.5-1.5H3zM13 3.5H9.5"/><path d="M13 3.5v8H9"/></svg>',
+};
+
+let S = null, first = true;
+const seen = new Set();
+
+function tween(el, to, fmt) {
+  const from = el._v ?? to; el._v = to;
+  if (reduced || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 800; cancelAnimationFrame(el._raf);
+  const step = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmt(from + (to - from) * e); if (k < 1) el._raf = requestAnimationFrame(step); };
+  el._raf = requestAnimationFrame(step);
+}
+function flash(el, dir) { if (reduced || !el.animate) return;
+  el.animate([{backgroundColor: dir > 0 ? "var(--flash-up)" : "var(--flash-down)"}, {backgroundColor: "transparent"}], {duration: 1100, easing: "ease-out"}); }
+const ringTo = (id, frac) => { $(id).style.strokeDashoffset = CIRC * (1 - Math.max(0, Math.min(1, frac))); };
+
+/* ---------- account ---------- */
+function renderAccount(s) {
+  const a = s.account, eq = a.equity ?? a.cash ?? 0, start = a.starting ?? 500;
+  $("start").textContent = eur(start, 0);
+  tween($("equity"), eq, v => v.toLocaleString("en", {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+  const pnl = eq - start, pc = start ? pnl / start * 100 : 0;
+  $("pnl").className = "pill num " + sc(Math.round(pnl * 100));
+  tween($("pnl"), pnl, v => signed(v) + "  " + (pc >= 0 ? "+" : "") + pc.toFixed(2) + "%");
+  const inTrades = s.positions.reduce((t, p) => t + p.cost_eur, 0);
+  $("k-win").textContent = a.trades ? a.wins + "/" + a.trades : "–"; ringTo("k-win-ring", a.trades ? a.wins / a.trades : 0);
+  $("k-open").textContent = s.positions.length + "/" + s.risk.max_positions; ringTo("k-open-ring", s.positions.length / s.risk.max_positions);
+  tween($("k-in"), inTrades, v => eur(v, 0)); ringTo("k-cash-ring", eq ? inTrades / eq : 0);
+  const used = Object.values(s.llm).reduce((t, u) => t + u.used, 0), lim = Object.values(s.llm).reduce((t, u) => t + (u.limit || 0), 0);
+  $("k-ai").textContent = used; ringTo("k-ai-ring", lim ? used / lim : 0);
+  $("stop-pct").textContent = "-" + s.risk.stop_pct; $("tp-pct").textContent = "+" + s.risk.target_pct;
+  drawCurve(s.equity_curve, eq, start);
+}
+function drawCurve(raw, live, start) {
+  const pts = raw.map(r => [when(r[0]), r[1]]); pts.push([Date.now(), live]);
+  const box = $("curvebox");
+  if (pts.length < 3) { box.innerHTML = `<div class="dim" style="padding:28px 6px">The equity line draws itself after a couple of scans.</div>`; return; }
+  const W = 1000, H = 190, pad = 10;
+  const t0 = pts[0][0], t1 = pts[pts.length - 1][0], ys = pts.map(p => p[1]).concat(start);
+  let lo = Math.min(...ys), hi = Math.max(...ys); const m = Math.max((hi - lo) * .15, start * .002); lo -= m; hi += m;
+  const X = t => pad + (t - t0) / (t1 - t0 || 1) * (W - 2 * pad), Y = v => H - pad - (v - lo) / (hi - lo) * (H - 2 * pad);
+  const line = pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join("");
+  const area = line + `L${X(t1).toFixed(1)} ${H}L${X(t0).toFixed(1)} ${H}Z`;
+  const col = live >= start ? "var(--gain)" : "var(--loss)", last = pts[pts.length - 1];
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Account value over time">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".30"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <line x1="0" x2="${W}" y1="${Y(start)}" y2="${Y(start)}" stroke="var(--faint)" stroke-dasharray="2 6" stroke-width="1"/>
+    <text x="${W - 4}" y="${Y(start) - 6}" text-anchor="end" fill="var(--faint)" font-size="12">start</text>
+    <path d="${area}" fill="url(#g)"/><path d="${line}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle class="halo" cx="${X(last[0])}" cy="${Y(last[1])}" r="4.5" fill="${col}"/><circle cx="${X(last[0])}" cy="${Y(last[1])}" r="4.5" fill="${col}"/>
+    <line id="xh" y1="0" y2="${H}" stroke="var(--dim)" stroke-width="1" opacity="0"/></svg><div class="tip num" id="tip"></div>`;
+  const svg = box.querySelector("svg"), tip = $("tip"), xh = $("xh");
+  svg.addEventListener("pointermove", e => { const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W;
+    let best = pts[0]; for (const p of pts) if (Math.abs(X(p[0]) - x) < Math.abs(X(best[0]) - x)) best = p;
+    xh.setAttribute("x1", X(best[0])); xh.setAttribute("x2", X(best[0])); xh.setAttribute("opacity", .6);
+    tip.style.left = (X(best[0]) / W * 100) + "%"; tip.style.opacity = 1;
+    tip.textContent = eur(best[1]) + "   " + new Date(best[0]).toLocaleString([], {weekday: "short", hour: "2-digit", minute: "2-digit"}); });
+  svg.addEventListener("pointerleave", () => { tip.style.opacity = 0; xh.setAttribute("opacity", 0); });
+}
+
+/* ---------- desk constellation ---------- */
+function renderDesk(s) {
+  const t = s.tree, last = s.debates[0], votes = {};
+  (last ? last.votes : []).forEach(v => votes[v.agent] = v);
+  const busy = /debat/.test(s.status);
+  const W = 640, H = 290, U = {x: 320, y: 46}, L = [{x: 110, y: 150}, {x: 320, y: 150}, {x: 530, y: 150}];
+  const nodes = [{a: t.manager, x: U.x, y: U.y, r: 26, mgr: true}], edges = [];
+  t.leads.forEach((l, i) => { const p = L[i]; nodes.push({a: l, x: p.x, y: p.y, r: 21}); edges.push([U, p]);
+    l.subs.forEach((sub, j) => { const q = {x: p.x + (j ? 52 : -52), y: 248}; nodes.push({a: sub, x: q.x, y: q.y, r: 15, sub: true}); edges.push([p, q]); }); });
+  const curve = (a, b) => `M${a.x} ${a.y}C${a.x} ${(a.y + b.y) / 2} ${b.x} ${(a.y + b.y) / 2} ${b.x} ${b.y}`;
+  const nd = n => { const v = votes[n.a.name], cls = v ? (v.action === "BUY" ? "buy" : "hold") : "", rr = n.r + 6, c = 2 * Math.PI * rr;
+    const label = n.sub ? n.a.name.split(".")[1] : n.a.name;
+    return `<g class="nd ${cls}${n.mgr ? " mgr" : ""}"><title>${esc(n.a.name)}: ${n.a.graded ? n.a.correct + "/" + n.a.graded + " right" : "not graded yet"}${v ? ", last vote " + v.action + " " + Math.round(v.confidence * 100) + "%" : ""}</title>
+      <circle cx="${n.x}" cy="${n.y}" r="${rr}" fill="none" stroke="var(--rule)" stroke-width="3.5"/>
+      <circle class="arc" cx="${n.x}" cy="${n.y}" r="${rr}" stroke="${n.mgr ? "var(--ultron)" : "var(--desk)"}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - n.a.reliability)).toFixed(1)}"/>
+      <circle class="disc" cx="${n.x}" cy="${n.y}" r="${n.r}"/>
+      ${v ? `<text x="${n.x}" y="${n.y + 4}" style="font-size:${n.sub ? 9.5 : 11}px">${v.action === "BUY" ? "BUY" : "HOLD"}</text>` : ""}
+      <text class="${n.sub ? "sm" : ""}" x="${n.x}" y="${n.y + n.r + (n.sub ? 22 : 24)}">${esc(label)}</text></g>`; };
+  $("constellation").innerHTML = `<svg viewBox="0 0 ${W} ${H + 8}" role="img" aria-label="The desk: Ultron, three leads and six specialists">
+    ${edges.map(([a, b]) => `<path class="edge${busy ? " live" : ""}" d="${curve(a, b)}"/>`).join("")}${nodes.map(nd).join("")}</svg>`;
+  $("desk-when").textContent = last ? "latest debate " + ago(last.ts) : "";
+  $("lastline").innerHTML = busy ? `<b>${esc(s.status)}</b>` : last
+    ? `Last: <b>${esc(last.symbol)}</b> (${esc(pretty(last.setup_type))}) ended <b>${last.executed ? (/practice/.test(last.risk_reason || "") ? "in a practice trade" : "in a trade") : esc(last.final_action)}</b>. ${esc(last.reason)}.`
+    : "No debate yet. The desk wakes up when the Scout flags a setup, or for a desk pick in quiet hours.";
+}
+
+/* ---------- market board ---------- */
+const rows = {}, lastPx = {}; let lastOrder = "";
+function sparkPath(vals) { const lo = Math.min(...vals), hi = Math.max(...vals), sp = hi - lo || 1;
+  return vals.map((v, i) => (i ? "L" : "M") + (i / (vals.length - 1) * 56).toFixed(1) + " " + (21 - (v - lo) / sp * 20).toFixed(1)).join(""); }
+function rowFor(sym) {
+  if (rows[sym]) return rows[sym];
+  const [base, quote] = sym.includes("/") ? sym.split("/") : [sym, ""];
+  const el = document.createElement("div"); el.className = "brow"; el.dataset.k = sym;
+  el.innerHTML = `<div class="sym"><b>${esc(base)}</b><small>${quote ? "/" + esc(quote) : ""}</small></div>
+    <div class="px num"></div><div class="sp"><svg class="spark" viewBox="0 0 56 22" aria-hidden="true"><path/></svg><span class="chg num"></span></div>
+    <div class="track"><i class="zone"></i><i class="mid"></i><i class="dot"></i><span class="val num"></span></div><div class="note"></div>`;
+  return rows[sym] = el;
+}
+function renderBoard(s) {
+  const w = s.watchlist || {}, coins = w.coins || {}, lim = w.rsi_oversold ?? 35, maxAtr = w.max_atr_pct ?? 1.5;
+  $("rsi-lim").textContent = lim;
+  const live = (s.live_prices || {});
+  $("board-when").textContent = live.as_of ? "prices " + ago(live.as_of) : "";
+  const syms = Object.keys(coins), board = $("board");
+  if (!syms.length) { board.innerHTML = empty("Waiting for the first scan to load prices."); return; }
+  if (board.querySelector(".empty")) board.innerHTML = "";
+  const info = syms.map(sym => { const c = coins[sym], p = (live.prices || {})[sym] ?? c.price;
+    const inZone = c.rsi < lim, trendOk = c.dist_ema200 > 0, calm = c.atr_pct <= maxAtr;
+    const state = c.held ? "held" : inZone && trendOk && calm ? "hot" : inZone && !trendOk ? "below" : inZone ? "choppy" : "watch";
+    return {sym, c, p, state, gap: c.rsi - lim, rank: c.held ? 0 : state === "hot" ? 1 : 2}; });
+  info.sort((a, b) => a.rank - b.rank || a.gap - b.gap);
+  const before = new Map([...board.children].map(e => [e.dataset.k, e.getBoundingClientRect().top]));
+  info.forEach(({sym, c, p, state, gap}) => {
+    const el = rowFor(sym); if (el.parentNode !== board) board.appendChild(el);
+    el.className = "brow" + (state === "hot" ? " hot" : "");
+    const px = el.querySelector(".px"); px.textContent = price(p);
+    if (lastPx[sym] != null && p !== lastPx[sym]) flash(px, p > lastPx[sym] ? 1 : -1); lastPx[sym] = p;
+    const ch = c.spark.length ? (p / c.spark[0] - 1) * 100 : 0, path = el.querySelector(".spark path");
+    path.setAttribute("d", sparkPath([...c.spark, p])); path.style.stroke = ch >= 0 ? "var(--gain)" : "var(--loss)";
+    const chg = el.querySelector(".chg"); chg.textContent = (ch >= 0 ? "+" : "") + ch.toFixed(1) + "%"; chg.className = "chg num " + sc(ch);
+    el.querySelector(".zone").style.width = lim + "%";
+    const dot = el.querySelector(".dot"), val = el.querySelector(".val"), r = Math.max(0, Math.min(100, c.rsi));
+    dot.style.left = r + "%"; val.style.left = r + "%"; val.textContent = "RSI " + c.rsi.toFixed(0);
+    dot.className = "dot" + (state === "hot" ? " hot" : state === "held" ? " held" : "");
+    const note = el.querySelector(".note");
+    note.className = "note" + (state === "hot" ? " hot" : state === "held" ? " held" : "");
+    note.textContent = state === "held" ? "holding" : state === "hot" ? "dip setup live" :
+      state === "below" ? "oversold, below trend" : state === "choppy" ? "oversold, too jumpy" :
+      c.dist_ema200 < 0 ? "below trend" : gap < 8 ? "close, " + gap.toFixed(0) + " to go" : gap.toFixed(0) + " RSI to go";
+    el.title = `${sym}: RSI ${c.rsi}, ${Math.abs(c.dist_ema200)}% ${c.dist_ema200 >= 0 ? "above" : "below"} the 200-hour trend, hourly range ${c.atr_pct}%. Sparkline is the last 48 hours.`;
+  });
+  Object.keys(rows).forEach(k => { if (!coins[k]) { rows[k].remove(); delete rows[k]; } });
+  const order = info.map(i => i.sym).join(",");
+  if (order !== lastOrder && !reduced && before.size)
+    info.forEach(({sym}) => { const el = rows[sym], dy = (before.get(sym) ?? el.getBoundingClientRect().top) - el.getBoundingClientRect().top;
+      if (dy) el.animate([{transform: `translateY(${dy}px)`}, {transform: "none"}], {duration: 520, easing: "cubic-bezier(.2,.8,.2,1)"}); });
+  lastOrder = order;
+}
+
+/* ---------- open trades ---------- */
+function renderPositions(s) {
+  if (!s.positions.length) {
+    $("positions").innerHTML = empty("Nothing open right now. When the desk likes a setup it buys a full-size position (" +
+      Math.round(20) + "% of the account). If Ultron passes but a lead still says BUY, a practice trade of " +
+      Math.round(s.practice.size_pct * 100) + "% opens instead, so every idea gets tested."); return; }
+  $("positions").innerHTML = s.positions.map(p => {
+    const last = p.last ?? p.entry_price, at = Math.max(0, Math.min(100, (last - p.stop_price) / (p.take_profit_price - p.stop_price) * 100));
+    const ret = (last / p.entry_price - 1) * 100, pl = p.unrealized_eur;
+    return `<div class="pos"><div class="top"><b>${esc(p.symbol)}</b>
+      <span class="tag ${p.practice ? "prac" : "real"}">${p.practice ? "practice" : "full size"}</span>
+      <span class="dim">${eur(p.cost_eur)} in, ${ago(p.opened_at)}</span>
+      <span class="pl num ${sc(pl)}">${pl == null ? "" : signed(pl)} <small>${ret >= 0 ? "+" : ""}${ret.toFixed(2)}%</small></span></div>
+      <div class="range"><span class="entry"></span><i style="left:${at}%"></i></div>
+      <div class="scale num"><span>stop ${price(p.stop_price)}</span><span>now ${price(last)}</span><span>target ${price(p.take_profit_price)}</span></div>
+      <div class="thesis">${esc(p.thesis.replace(/^\[practice\]\s*/, ""))}</div></div>`; }).join("");
+}
+
+/* ---------- feed ---------- */
+function buildEvents(s) {
+  const ev = [];
+  s.cycles.slice(0, 3).forEach(c => { const n = (c.loaded || "").split(",").filter(Boolean).length;
+    ev.push({id: "c" + c.id, t: c.ts, kind: "scan", text: `Scanned ${n} market${n === 1 ? "" : "s"}: ${c.checked} new candle${c.checked === 1 ? "" : "s"}, ${c.setups} flagged`}); });
+  s.debates.forEach(d => { const prac = d.executed && /practice/.test(d.risk_reason || "");
+    ev.push({id: "d" + d.id, t: d.ts, kind: d.executed ? "open" : "debate",
+      text: d.executed ? `Bought <b>${esc(d.symbol)}</b>${prac ? " as a practice trade" : ""} after a ${esc(pretty(d.setup_type))}`
+                       : `Debated <b>${esc(d.symbol)}</b> (${esc(pretty(d.setup_type))}), passed: ${esc(d.reason)}`}); });
+  s.trades.forEach(t => ev.push({id: "t" + t.id, t: t.closed_at, kind: t.pnl_eur > 0 ? "win" : "loss",
+    text: `Sold <b>${esc(t.symbol)}</b> at the ${t.exit_reason === "take_profit" ? "target" : t.exit_reason === "stop_loss" ? "stop" : esc(pretty(t.exit_reason))}: <span class="${sc(t.pnl_eur)}">${signed(t.pnl_eur)}</span>`}));
+  s.lessons.slice(0, 5).forEach(l => ev.push({id: "l" + l.created_at + l.symbol, t: l.created_at, kind: "lesson", text: `Lesson from ${esc(l.symbol)}: ${esc(l.lesson)}`}));
+  return ev.sort((a, b) => when(b.t) - when(a.t)).slice(0, 30);
+}
+function renderFeed(s) {
+  const ev = S._ev, ul = $("feed");
+  if (!ev.length) { ul.innerHTML = `<li class="scan"><span class="ico">${ICON.scan}</span><span>Waiting for the first scan…</span><time></time></li>`; return; }
+  const sig = ev.map(e => e.id).join("|"); if (ul._sig === sig) return; ul._sig = sig;
+  ul.innerHTML = ev.map(e => { const fresh = !first && !seen.has(e.id); seen.add(e.id);
+    return `<li class="${e.kind}${fresh ? " fresh" : ""}"><span class="ico">${ICON[e.kind]}</span><span>${e.text}</span><time>${ago(e.t)}</time></li>`; }).join("");
+}
+
+/* ---------- debates ---------- */
+const ORDER = ["analyst.trend", "analyst.reversion", "analyst", "bull.momentum", "bull.pullback", "bull", "bear.trap", "bear.regime", "bear", "ultron"];
+function voteHtml(v) { const kind = v.agent === "ultron" ? "mgr" : v.agent.includes(".") ? "sub" : "lead";
+  return `<div class="vote ${kind}"><b>${esc(v.agent)}</b> <span class="tag ${v.action === "BUY" ? "buy" : ""}">${esc(v.action)} ${(v.confidence * 100).toFixed(0)}%</span>
+    ${v.p_win != null ? `<span class="tag">chance ${Math.round(v.p_win * 100)}%</span>` : ""}
+    <small>${esc(v.provider)}${v.winner ? ", sided with " + esc(v.winner) : ""}</small><div>${esc(v.thesis)}</div>
+    ${(v.evidence || []).length ? `<small>Numbers: ${v.evidence.map(esc).join(", ")}</small><br>` : ""}${v.key_risk ? `<small>Risk: ${esc(v.key_risk)}</small>` : ""}</div>`; }
+function renderDebates(s) {
+  const open = new Set([...document.querySelectorAll("#debates details[open]")].map(d => d.dataset.id));
+  if (!s.debates.length) { $("debates").innerHTML = empty("No debates yet. Expect the first one within a couple of hours: either the Scout flags a dip, or the desk picks the best-looking coin itself."); return; }
+  $("debates").innerHTML = s.debates.slice(0, 12).map(d => {
+    const by = Object.fromEntries(d.votes.map(v => [v.agent, v]));
+    const chips = ORDER.filter(a => by[a]).map(a => { const v = by[a], k = a === "ultron" ? " mgr" : a.includes(".") ? "" : " ld";
+      return `<span class="vchip${v.action === "BUY" ? " buy" : ""}${k}" title="${esc(a)}: ${esc(v.action)} ${Math.round(v.confidence * 100)}%">${esc((a.split(".")[1] || a)[0].toUpperCase())}</span>`; }).join("");
+    const groups = ["analyst", "bull", "bear"].map(l => { const lead = by[l];
+      return [lead, ...d.votes.filter(v => v.agent.startsWith(l + "."))].filter(Boolean).map(v => {
+        const h = voteHtml(v); return lead && lead.winner === v.agent ? h.replace('class="vote sub"', 'class="vote sub won"') : h; }).join(""); }).join("");
+    const prac = d.executed && /practice/.test(d.risk_reason || "");
+    const verdict = d.executed ? (prac ? "practice trade" : "bought") : "passed";
+    return `<details class="deb" data-id="${d.id}" ${open.has(String(d.id)) ? "open" : ""}><summary>
+      <div class="dtitle"><b>${esc(d.symbol)}</b><span class="tag">${esc(pretty(d.setup_type))}</span>
+      <span class="tag ${d.executed ? (prac ? "prac" : "buy") : ""}">${verdict}</span><span class="dim">${ago(d.ts)}</span></div>
+      <div class="votes" aria-label="votes">${chips}</div></summary>
+      <div class="dbody"><div class="dim">${esc(d.reason)}. Risk check: ${esc(d.risk_reason)}.</div>${groups}${by.ultron ? voteHtml(by.ultron) : ""}</div></details>`; }).join("");
+}
+
+/* ---------- funnel, setups, tables ---------- */
+function renderFunnel(s) {
+  const f = s.funnel, top = Math.max(f.checked, 1);
+  const steps = [["Candles checked", f.checked, "var(--desk)"], ["Setups found", f.flagged, "var(--scout)"], ["Debated", f.debated, "var(--ultron)"], ["Bought", f.opened, "var(--gain)"]];
+  $("funnel").innerHTML = steps.map(([n, v, c]) => `<div class="fstep"><span>${n}</span><div class="fbar"><i style="width:${v / top * 100}%;background:${c}"></i></div><span class="num">${v}</span></div>`).join("");
+  $("funnel-sub").textContent = "Setups found includes desk picks in quiet hours. Most candles show nothing, which is normal.";
+}
+function renderSetups(s) {
+  const keys = Object.keys(s.by_setup);
+  $("setups").innerHTML = keys.length ? keys.map(k => { const d = s.by_setup[k], n = d.win + d.loss, wr = d.win_rate || 0;
+    return `<div class="setup"><span>${esc(pretty(k))}</span><div class="meter"><i style="width:${wr * 100}%;background:${wr >= .38 ? "var(--gain)" : "var(--loss)"}"></i><u></u></div>
+      <span class="num"><b>${pct(d.win_rate)}</b> <span class="dim">of ${n}</span></span></div>`; }).join("")
+    : empty("Results show up once the first followed setups finish their 48 hours.");
+}
+function node(a) { const rel = a.graded ? `${a.correct}/${a.graded} right` : "not graded yet";
+  return `<div class="node"><div class="name">${esc(a.name)}</div>${a.lens ? `<div class="lens">${esc(a.lens)}</div>` : ""}
+    <div class="meta"><span>${rel}</span><span>weight ${a.reliability.toFixed(2)}${a.times_picked ? ", picked " + a.times_picked + "×" : ""}</span></div>
+    <div class="rel"><i style="width:${Math.round(a.reliability * 100)}%"></i></div></div>`; }
+function table(cols, data, none) { if (!data.length) return empty(none);
+  return `<table><tr>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr>${data.map(r => `<tr>${cols.map(c => `<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</table>`; }
+function renderTables(s) {
+  const t = s.tree;
+  $("tree").innerHTML = `<div class="lead mgr">${node(t.manager)}<div class="dim" style="font-size:12.5px">The manager. Only asked when two leads lean BUY.</div></div>` +
+    t.leads.map(l => `<div class="lead">${node(l)}<div class="subs">${l.subs.map(node).join("")}</div></div>`).join("");
+  $("trades").innerHTML = table([["Coin", r => `<b>${esc(r.symbol)}</b> ${r.practice ? '<span class="tag prac">practice</span>' : ""}`],
+    ["Result", r => `<span class="${sc(r.pnl_eur)} num">${signed(r.pnl_eur)} (${r.return_pct.toFixed(2)}%)</span>`],
+    ["Exit", r => r.exit_reason === "take_profit" ? "target" : r.exit_reason === "stop_loss" ? "stop" : esc(pretty(r.exit_reason))], ["When", r => ago(r.closed_at)]],
+    s.trades.slice(0, 12), "No closed trades yet. Each trade runs until it hits its stop or its target.");
+  $("lessons").innerHTML = s.lessons.length ? s.lessons.map(l => `<div style="margin-bottom:14px"><span class="tag ${l.outcome === "win" ? "buy" : ""}">${esc(l.outcome)} ${l.return_pct.toFixed(1)}%</span>
+    <span class="dim">${esc(l.symbol)}, ${esc(pretty(l.setup_type))}</span><div style="margin-top:4px">${esc(l.lesson)}</div></div>`).join("") : empty("Lessons appear after the first trade closes.");
+  const sh = s.shadow, row = (n, x) => `<tr><td>${n}</td><td class="num">${x.wins}</td><td class="num">${x.losses}</td><td class="num">${x.expired}</td><td class="num"><b>${pct(x.win_rate)}</b></td></tr>`;
+  $("shadow").innerHTML = `<table><tr><th></th><th>Won</th><th>Lost</th><th>Expired</th><th>Win rate</th></tr>${row("Every setup", sh.every_setup)}${row("Ultron said BUY", sh.ultron_buy)}${row("Ultron passed", sh.ultron_passed)}</table>
+    <p class="sub" style="margin-top:10px">${sh.pending} setups still being followed. Ultron earns trust only if "said BUY" beats "every setup" over many setups.</p>`;
+  const llm = Object.entries(s.llm);
+  $("llm").innerHTML = llm.length ? llm.map(([p, u]) => `<div style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><b>${esc(p)}</b><span class="dim num">${u.used}${u.limit ? " / " + u.limit : ""}</span></div>
+    <div class="rel"><i style="width:${u.limit ? Math.min(100, u.used / u.limit * 100) : 0}%"></i></div></div>`).join("") : empty("No calls yet today.");
+  const em = s.email;
+  $("mailstate").textContent = em.configured ? "Sends to " + em.to : "Not set up: add RESEND_API_KEY and EMAIL_TO";
+  $("emails").innerHTML = table([["When", r => ago(r.ts)], ["Email", r => esc(r.subject)],
+    ["Result", r => r.ok ? `<span class="gain">sent</span>` : `<span class="loss">failed</span> <span class="dim">${esc(r.detail)}</span>`]], em.recent, "No emails yet.");
+  $("cycles").innerHTML = table([["When", r => ago(r.ts)], ["Markets", r => (r.loaded || "").split(",").filter(Boolean).length],
+    ["Failed", r => r.failed ? `<span class="loss">${esc(r.failed)}</span>` : "–"], ["New candles", r => r.checked], ["Found", r => r.setups],
+    ["US stocks", r => r.stocks_open ? "open" : "closed"]], s.cycles, "No scans yet.");
+}
+
+/* ---------- header + clock ---------- */
+function renderHeader(s) {
+  const last = s.cycles[0], age = last ? (Date.now() - when(last.ts)) / 1000 : Infinity;
+  const stale = age > s.cycle_seconds * 3 + 60, busy = /debat/.test(s.status);
+  $("pulse").className = "pulse " + (stale ? "off" : busy ? "busy" : "on");
+  $("status").textContent = stale ? (last ? "No scan for " + ago(last.ts).replace(" ago", "") : "Waiting for the first scan") : s.status.charAt(0).toUpperCase() + s.status.slice(1);
+  const halted = s.halted_until && new Date(s.halted_until) > new Date();
+  $("halt").hidden = !halted;
+  if (halted) { $("halt").textContent = "paused after a 5% drop, until " + new Date(s.halted_until).toLocaleString(); $("halt").className = "chip bad"; }
+}
+function clock() {
+  if (!S || !S.cycles[0]) return;
+  const left = Math.max(0, S.cycle_seconds - (Date.now() - when(S.cycles[0].ts)) / 1000);
+  $("clock").textContent = left > 1 ? "next scan " + Math.floor(left / 60) + ":" + String(Math.floor(left % 60)).padStart(2, "0") : "scanning…";
+  $("ring").style.strokeDashoffset = 62.83 * (left / S.cycle_seconds);
+  document.querySelectorAll("#feed time").forEach((t, i) => { const e = S._ev[i]; if (e) t.textContent = ago(e.t); });
+}
+
+function render(s) {
+  S = s; S._ev = buildEvents(s);
+  renderHeader(s); renderAccount(s); renderDesk(s); renderBoard(s); renderPositions(s); renderFeed(s);
+  renderDebates(s); renderFunnel(s); renderSetups(s); renderTables(s);
+  first = false; clock();
+}
+async function tick() {
+  try {
+    const r = await fetch("/api/state" + (KEY ? "?key=" + encodeURIComponent(KEY) : ""));
+    if (!r.ok) throw new Error(r.status);
+    render(await r.json());
+  } catch (e) { $("pulse").className = "pulse off"; $("status").textContent = "Can't reach the bot (" + e.message + "). Retrying…"; }
+}
+$("testmail").addEventListener("click", async () => {
+  const b = $("testmail"); b.disabled = true; $("mailstate").textContent = "Sending…";
+  try {
+    const r = await fetch("/api/test-email" + (KEY ? "?key=" + encodeURIComponent(KEY) : ""), {method: "POST", headers: {"X-Ultron": "1"}});
+    const j = await r.json();
+    $("mailstate").textContent = (j.ok ? "Sent to " : "Failed for ") + j.to + ": " + j.detail; $("mailstate").className = j.ok ? "gain" : "loss";
+  } catch (e) { $("mailstate").textContent = "Couldn't reach the bot: " + e.message; $("mailstate").className = "loss"; }
+  b.disabled = false; tick();
+});
+tick(); setInterval(tick, 4000); setInterval(clock, 1000);
+</script>
+</body>
+</html>
